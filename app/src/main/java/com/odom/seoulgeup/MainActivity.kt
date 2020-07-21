@@ -213,7 +213,6 @@ import java.net.URL
                     for (i in 0 until array.length()) {
                         // 마커 추가
                         addMarkers(array.getJSONObject(i))
-
                     }
                 }
             }
@@ -243,6 +242,6 @@ import java.net.URL
                     .snippet(toilets.getString("ANAME"))
                     .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
             )
-
         }
+        
 }
