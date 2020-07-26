@@ -20,6 +20,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.maps.android.clustering.ClusterManager
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONArray
 import org.json.JSONObject
@@ -71,9 +72,24 @@ import java.net.URL
             return true
         }
 
+        // clusterManager 변수
+        var clusterManager : ClusterManager<MyItem>? = null
+        // clusterRenderer 변수
+        var clusterRenderer : ClusterRenderer? = null
+
+        @SuppressLint("MissingPermission")
         fun initMap(){
             // 맵뷰에서 구글 맵을 불러옴
             mapView.getMapAsync {
+
+                // cluster 객체 초기화
+                clusterManager = ClusterManager(this, it)
+                clusterRenderer = ClusterRenderer(this, it, clusterManager)
+
+                //
+                it.setOnCameraIdleListener(clusterManager)
+                it.setOnMarkerClickListener(clusterManager)
+
                 googleMap = it
                 it.uiSettings.isMyLocationButtonEnabled = false
                 it.isMyLocationEnabled = true
@@ -215,6 +231,9 @@ import java.net.URL
                         addMarkers(array.getJSONObject(i))
                     }
                 }
+
+                // clusterManager의 클러스터링 실행
+                clusterManager?.cluster()
             }
         }
 
@@ -235,13 +254,23 @@ import java.net.URL
 
         // 마커 추가
         fun addMarkers(toilets : JSONObject){
-            googleMap?.addMarker(
-                MarkerOptions()
-                    .position(LatLng(toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")))
-                    .title(toilets.getString("FNAME"))
-                    .snippet(toilets.getString("ANAME"))
-                    .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
+            // clusterManager를 이용해 마커 추가
+            clusterManager?.addItem(
+                MyItem(
+                    LatLng(toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")),
+                    toilets.getString("FNAME"),
+                    toilets.getString("ANAME"),
+                    BitmapDescriptorFactory.fromBitmap(bitmap)
+                )
             )
+
+//            googleMap?.addMarker(
+//                MarkerOptions()
+//                    .position(LatLng(toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")))
+//                    .title(toilets.getString("FNAME"))
+//                    .snippet(toilets.getString("ANAME"))
+//                    .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
+//            )
         }
-        
+
 }
