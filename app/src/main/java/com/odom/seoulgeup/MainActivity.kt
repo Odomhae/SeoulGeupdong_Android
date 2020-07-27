@@ -11,7 +11,9 @@ import android.location.LocationManager
 import android.os.AsyncTask
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.text.TextUtils
 import android.util.Log
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat.getSystemService
@@ -22,6 +24,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.maps.android.clustering.ClusterManager
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.search_bar.view.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URL
@@ -152,6 +155,9 @@ import java.net.URL
         var task: ToiletReadTask ?= null
         // 화장실 정보 저장할 배열
         var toilets = JSONArray()
+        // JSONobject를 키로 MyItem 객체를 저장할 맵
+        val itemMap = mutableMapOf<JSONObject, MyItem>()
+
         // 화장실 이미지
         val bitmap by lazy {
             val drawable = resources.getDrawable(R.drawable.restroom_sign) as BitmapDrawable
@@ -184,6 +190,8 @@ import java.net.URL
                 googleMap?.clear()
                 // 화장실 정보 초기화
                 toilets = JSONArray()
+                // itemMap 변수 초기화
+                itemMap.clear()
             }
 
             override fun doInBackground(vararg params: Void?): String {
@@ -235,6 +243,39 @@ import java.net.URL
                 // clusterManager의 클러스터링 실행
                 clusterManager?.cluster()
             }
+
+            // 백그라운드 작업이 끝난 후 실행
+            override fun onPostExecute(result: String?) {
+                // 자동완성 텍스트뷰에서 사용할 텍스트 리스트
+                val textList = mutableListOf<String>()
+
+                // 모든 화장실의 이름을 리스트에 추가
+                for(i in 0 until toilets.length()){
+                    val toilet = toilets.getJSONObject(i)
+                    textList.add(toilet.getString("FNAME"))
+                }
+
+                // 자동완성 텍스트뷰의 어댑터 추가
+                val adapter = ArrayAdapter<String>(
+                    this@MainActivity,
+                    android.R.layout.simple_dropdown_item_1line, textList
+                )
+
+                // 자동완성이 시작되는 글자수
+                searchBar.autoCompleteTextView.threshold = 1
+                // 자동완성 텍스트뷰의 어댑터 설정
+                searchBar.autoCompleteTextView.setAdapter(adapter)
+            }
+        }
+
+        // JSONArray에서 원소의 속성으로 검색
+        fun JSONArray.findByChildProperty(propertyName : String, value : String) : JSONObject?{
+            for(i in 0 until length()){
+                val obj = getJSONObject(i)
+                if(value == obj.getString(propertyName))
+                    return obj
+            }
+            return null
         }
 
         // 앱이 활성화될때마다 데이터를 읽어옴
@@ -243,6 +284,34 @@ import java.net.URL
             task?.cancel(true)
             task = ToiletReadTask()
             task?.execute()
+
+            // searchbar 검색 리스너 설정
+            searchBar.imageView.setOnClickListener {
+                val word = searchBar.autoCompleteTextView.text.toString()
+                // 값이 없으면 그대로 리턴
+                if(TextUtils.isEmpty(word))
+                    return@setOnClickListener
+
+                // 검색 키워드에 해당하는 jsonobject 검색
+                toilets.findByChildProperty("FNAME", word)?.let{
+                    val myItem = itemMap[it]
+
+                    // clusterRenderer에서 myItem을 기반으로 마커 검색
+                    val marker = clusterRenderer?.getMarker(myItem)
+                    marker?.showInfoWindow()
+
+                    // 마커 위치로 카메라 이동
+                    googleMap?.moveCamera(
+                        CameraUpdateFactory.newLatLngZoom(
+                            LatLng(it.getDouble("Y_WGS84"), it.getDouble("X_WGS84")), DEFAULT_ZOOM_LEVEL
+                        )
+                    )
+                    clusterManager?.cluster()
+                }
+
+                // 검색 텍스트 초기화
+                searchBar.autoCompleteTextView.setText("")
+            }
         }
 
         // 앱이 비활성화될때마다 백그라운드 작업취소
@@ -254,6 +323,14 @@ import java.net.URL
 
         // 마커 추가
         fun addMarkers(toilets : JSONObject){
+
+            val item = MyItem(
+                LatLng(toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")),
+                toilets.getString("FNAME"),
+                toilets.getString("ANAME"),
+                BitmapDescriptorFactory.fromBitmap(bitmap)
+            )
+
             // clusterManager를 이용해 마커 추가
             clusterManager?.addItem(
                 MyItem(
@@ -263,6 +340,9 @@ import java.net.URL
                     BitmapDescriptorFactory.fromBitmap(bitmap)
                 )
             )
+
+            //
+            itemMap.put(toilets, item)
 
 //            googleMap?.addMarker(
 //                MarkerOptions()
