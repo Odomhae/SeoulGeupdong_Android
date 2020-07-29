@@ -16,12 +16,11 @@ import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat.getSystemService
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.maps.android.clustering.ClusterManager
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.search_bar.view.*
@@ -45,6 +44,7 @@ import java.net.URL
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
             setContentView(R.layout.activity_main)
+            MapsInitializer.initialize(applicationContext)
 
             mapView.onCreate(savedInstanceState)
 
@@ -95,20 +95,29 @@ import java.net.URL
 
                 googleMap = it
                 it.uiSettings.isMyLocationButtonEnabled = false
-                it.isMyLocationEnabled = true
 
-                // 현재위치로 카메라 이동
-                it.moveCamera(CameraUpdateFactory.newLatLngZoom(getMyLocation() , DEFAULT_ZOOM_LEVEL))
-                Log.d("위치", getMyLocation().latitude.toString())
-                Log.d("위치", getMyLocation().longitude.toString())
+                when{
+                    hasPermissions() ->{
+                        it.isMyLocationEnabled = true
+                        it.moveCamera(CameraUpdateFactory.newLatLngZoom(getMyLocation(), DEFAULT_ZOOM_LEVEL))
+                    }
+                    else ->{
+                        it.moveCamera(CameraUpdateFactory.newLatLngZoom(CITY_HALL, DEFAULT_ZOOM_LEVEL))
+                    }
+                }
+
             }
         }
 
         @SuppressLint("MissingPermission")
         fun getMyLocation() :LatLng{
             val locationProvider : String = LocationManager.GPS_PROVIDER
+            Log.d("locationP", locationProvider)
             val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            val lastKnownLocation : Location = locationManager.getLastKnownLocation(locationProvider) //as Location
+            Log.d("locationM", locationManager.toString())
+            val lastKnownLocation : Location = locationManager.getLastKnownLocation(locationProvider)
+            Log.d("lastKlocationM", lastKnownLocation.toString())
+
 
             // 경도 위도 위치 반환
             return LatLng(lastKnownLocation.latitude, lastKnownLocation.longitude)
@@ -118,12 +127,10 @@ import java.net.URL
             when{
                 hasPermissions() ->{
                     googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(getMyLocation(), DEFAULT_ZOOM_LEVEL))
-                    Log.d("위치2", getMyLocation().latitude.toString())
-                    Log.d("위치2", getMyLocation().longitude.toString())
                 }
 
                 else -> {
-                    Toast.makeText(applicationContext, "위치사용권한에 동의해주세요", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(applicationContext, "위치 사용권한에 동의해주세요", Toast.LENGTH_SHORT).show()
                     googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(CITY_HALL, DEFAULT_ZOOM_LEVEL))
                 }
             }
