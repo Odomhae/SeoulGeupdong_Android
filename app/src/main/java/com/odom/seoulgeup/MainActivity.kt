@@ -48,12 +48,12 @@ import java.net.URL
 
             mapView.onCreate(savedInstanceState)
 
-            if(hasPermissions()){
+         //   if(hasPermissions()){
                 initMap()
-            }else{
+         //   }else{
                 //권한 요청
-                ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
-            }
+        //        ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
+        //    }
 
             // 현재 위치 버튼 리스너
             myLocationButton.setOnClickListener { onMyLocationButtonClick() }
