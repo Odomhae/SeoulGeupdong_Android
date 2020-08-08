@@ -1,20 +1,26 @@
-    package com.odom.seoulgeup
+package com.odom.seoulgeup
 
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.location.Location
 import android.location.LocationManager
+import android.net.ConnectivityManager
+import android.net.NetworkInfo
 import android.os.AsyncTask
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
+import android.view.Gravity
+import android.view.Window
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -27,36 +33,64 @@ import kotlinx.android.synthetic.main.search_bar.view.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URL
+import kotlin.system.exitProcess
 
-    class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity() {
 
         var PERMISSIONS = arrayOf(
             Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.ACCESS_FINE_LOCATION
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.INTERNET
         )
 
         val REQUEST_PERMISSION_CODE = 1
         val DEFAULT_ZOOM_LEVEL = 17f
         val CITY_HALL = LatLng(37.566648, 126.978449)
-
+        val NONHEUN = LatLng(37.504433, 127.024330)
         var googleMap: GoogleMap? = null
 
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
+
+            // 인터넷 연결 안되어있으면
+            // 알림 후 종료
+            if(!checkInternetConnection()){
+                val builder = AlertDialog.Builder(this@MainActivity)
+                builder.setTitle("인터넷 연결을 확인해주세요 ")
+                    .setPositiveButton("확인", DialogInterface.OnClickListener { dialog, which ->
+                        finish()
+                        exitProcess(0)
+                    })
+
+                val alertDialog = builder.create()
+                alertDialog.show()
+            }
+
             setContentView(R.layout.activity_main)
+            mapView.onCreate(savedInstanceState)
             MapsInitializer.initialize(applicationContext)
 
-            mapView.onCreate(savedInstanceState)
-
-            if(hasPermissions()){
-                initMap()
-            }else{
+            //if(hasPermissions()){
+             //   initMap()
+            //}else{
                 //권한 요청
-                ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
-            }
+               ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
+            //}
 
             // 현재 위치 버튼 리스너
             myLocationButton.setOnClickListener { onMyLocationButtonClick() }
+        }
+
+
+       // 인터넷 연결 확인
+       fun checkInternetConnection() : Boolean {
+            val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+            val activeNetwork: NetworkInfo? = cm.activeNetworkInfo
+
+            if (activeNetwork != null)
+                return true
+
+            return false
         }
 
         override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray
@@ -112,14 +146,13 @@ import java.net.URL
         @SuppressLint("MissingPermission")
         fun getMyLocation() :LatLng{
             val locationProvider : String = LocationManager.GPS_PROVIDER
-            Log.d("locationP", locationProvider)
             val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-            Log.d("locationM", locationManager.toString())
-            val lastKnownLocation : Location = locationManager.getLastKnownLocation(locationProvider)
-            Log.d("lastKlocationM", lastKnownLocation.toString())
-
+            val lastKnownLocation : Location? = locationManager.getLastKnownLocation(locationProvider)
 
             // 경도 위도 위치 반환
+            if(lastKnownLocation == null)
+                return LatLng(NONHEUN.latitude, NONHEUN.longitude)
+
             return LatLng(lastKnownLocation.latitude, lastKnownLocation.longitude)
         }
 
@@ -127,6 +160,9 @@ import java.net.URL
             when{
                 hasPermissions() ->{
                     googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(getMyLocation(), DEFAULT_ZOOM_LEVEL))
+                    val a = getMyLocation().latitude.toString()+" "+getMyLocation().longitude.toString()
+                    Toast.makeText(applicationContext, a, Toast.LENGTH_LONG).show()
+                    Log.d("TAG", "권한있음"+" 위치 :"+getMyLocation().toString())
                 }
 
                 else -> {
@@ -142,13 +178,16 @@ import java.net.URL
             mapView.onResume()
         }
         override fun onPause() {
-            super.onPause()
             mapView.onPause()
+            super.onPause()
         }
 
         override fun onDestroy() {
             super.onDestroy()
             mapView.onDestroy()
+            // 앱 종료시 AsyncTask도 종료
+            if(ToiletReadTask().status == AsyncTask.Status.RUNNING)
+                ToiletReadTask().cancel(true)
         }
 
         override fun onLowMemory() {
@@ -189,6 +228,7 @@ import java.net.URL
         }
 
         // 화장실 데이터를 읽어오는 AsyncTask
+        @SuppressLint("StaticFieldLeak")
         inner class ToiletReadTask : AsyncTask<Void, JSONArray, String>() {
 
             // 기존 데이터 초기화
@@ -290,7 +330,10 @@ import java.net.URL
             super.onStart()
             task?.cancel(true)
             task = ToiletReadTask()
-            task?.execute()
+
+            // 인터넷 연결이 있을시에만 AsyncTask 실행★
+            if(checkInternetConnection())
+                task?.execute()
 
             // searchbar 검색 리스너 설정
             searchBar.imageView.setOnClickListener {
