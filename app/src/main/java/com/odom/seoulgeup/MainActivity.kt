@@ -70,12 +70,21 @@ class MainActivity : AppCompatActivity() {
             mapView.onCreate(savedInstanceState)
             MapsInitializer.initialize(applicationContext)
 
+<<<<<<< HEAD
             //if(hasPermissions()){
              //   initMap()
             //}else{
                 //권한 요청
                ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
             //}
+=======
+         //   if(hasPermissions()){
+                initMap()
+         //   }else{
+                //권한 요청
+        //        ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
+        //    }
+>>>>>>> d868dbdc1ff435539f27b31b10dfdc6d4fe7ac2f
 
             // 현재 위치 버튼 리스너
             myLocationButton.setOnClickListener { onMyLocationButtonClick() }
