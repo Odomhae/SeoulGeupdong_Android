@@ -203,10 +203,8 @@ class MainActivity : AppCompatActivity() {
                 val builder = AlertDialog.Builder(this@MainActivity)
                 builder.setTitle("위치 사용권한에 동의해주세요.")
                     .setPositiveButton("동의하기", DialogInterface.OnClickListener { dialog, which ->
-                        finish()
-                        val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                        intent.addCategory(Intent.CATEGORY_DEFAULT)
-                        startActivity(intent)
+                        //권한 요청
+                        ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
                     })
                     .setNegativeButton("거절", {dialog, which ->
                         Toast.makeText(applicationContext, "위치 사용권한에 동의하지 않았습니다", Toast.LENGTH_SHORT).show()
