@@ -3,7 +3,6 @@ package com.odom.seoulgeup
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -18,7 +17,6 @@ import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
-import android.view.Gravity
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -64,10 +62,10 @@ class MainActivity : AppCompatActivity() {
         if(!checkInternetConnection()){
             val builder = AlertDialog.Builder(this@MainActivity)
             builder.setTitle("인터넷 연결을 확인해주세요 ")
-                .setPositiveButton("확인", DialogInterface.OnClickListener { dialog, which ->
+                .setPositiveButton("확인") { _, _ ->
                     finish()
                     exitProcess(0)
-                })
+                }
 
             val alertDialog = builder.create()
             alertDialog.show()
@@ -144,7 +142,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @SuppressLint("MissingPermission")
+    @SuppressLint("MissingPermission") // MissingPermission 문제의 Lint 검사 중지
     fun getMyLocation() : LatLng{
         val locationProvider : String = LocationManager.GPS_PROVIDER
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -191,25 +189,35 @@ class MainActivity : AppCompatActivity() {
             hasPermissions() ->{
                 googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(getMyLocation(), DEFAULT_ZOOM_LEVEL))
                 Log.d("TAG", "권한있음"+" 위치 :"+getMyLocation().toString())
+
                 // 권한은 있는데 GPS 꺼져있으면 켜는 화면으로 이동
                 if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
-                    val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-                    intent.addCategory(Intent.CATEGORY_DEFAULT)
-                    startActivity(intent)
+                    val builder = AlertDialog.Builder(this@MainActivity)
+                    builder.setTitle("GPS가 꺼져있습니다.")
+                        .setPositiveButton("확인") { _, _ ->
+                            val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                            intent.addCategory(Intent.CATEGORY_DEFAULT)
+                            startActivity(intent)
+                        }
+                        .setNegativeButton("취소") {_, _ ->
+                        }
+
+                    val alertDialog = builder.create()
+                    alertDialog.show()
                 }
             }
 
             else -> {
                 val builder = AlertDialog.Builder(this@MainActivity)
                 builder.setTitle("위치 사용권한에 동의해주세요.")
-                    .setPositiveButton("동의하기", DialogInterface.OnClickListener { dialog, which ->
+                    .setPositiveButton("동의하기") { dialog, which ->
                         //권한 요청
                         ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
-                    })
-                    .setNegativeButton("거절", {dialog, which ->
+                    }
+                    .setNegativeButton("거절") {_, _ ->
                         Toast.makeText(applicationContext, "위치 사용권한에 동의하지 않았습니다", Toast.LENGTH_SHORT).show()
                         googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(CITY_HALL, DEFAULT_ZOOM_LEVEL))
-                    })
+                    }
 
                 val alertDialog = builder.create()
                 alertDialog.show()
