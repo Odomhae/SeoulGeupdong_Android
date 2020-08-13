@@ -35,7 +35,7 @@ class MyItem(val _position :LatLng, val _title:String, val _snippet:String, val 
         return false
     }
 
-    //
+    // 같은 객체는 같은 해시코드를 반환해야
     override fun hashCode(): Int {
         var hash = _position.latitude.hashCode()*31
         hash = hash*31 + _position.longitude.hashCode()

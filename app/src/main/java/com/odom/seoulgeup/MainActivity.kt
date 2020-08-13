@@ -27,6 +27,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapsInitializer
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.Circle
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.clustering.ClusterManager
 import kotlinx.android.synthetic.main.activity_main.*
@@ -34,6 +35,7 @@ import kotlinx.android.synthetic.main.search_bar.view.*
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URL
+import kotlin.math.pow
 import kotlin.system.exitProcess
 
 
@@ -178,7 +180,6 @@ class MainActivity : AppCompatActivity() {
             Log.d("TAG", "위치 확인불가")
             return LatLng(CITY_HALL.latitude, CITY_HALL.longitude)
         }
-
 
         return LatLng(lastKnownLocation!!.latitude, lastKnownLocation!!.longitude)
     }
@@ -428,6 +429,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // 좌표로 거리구하기
+    fun getDistance( lat1: Double, lng1:Double, lat2:Double, lng2:Double) : Float{
+
+        val myLoc = Location(LocationManager.NETWORK_PROVIDER)
+        val targetLoc = Location(LocationManager.NETWORK_PROVIDER)
+        myLoc.latitude= lat1
+        myLoc.longitude = lng1
+
+        targetLoc.latitude= lat2
+        targetLoc.longitude = lng2
+
+        return myLoc.distanceTo(targetLoc)
+    }
+
     // 앱이 비활성화될때마다 백그라운드 작업취소
     override fun onStop() {
         super.onStop()
@@ -437,7 +452,6 @@ class MainActivity : AppCompatActivity() {
 
     // 마커 추가
     fun addMarkers(toilets : JSONObject){
-
         val item = MyItem(
             LatLng(toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")),
             toilets.getString("FNAME"),
@@ -446,24 +460,25 @@ class MainActivity : AppCompatActivity() {
         )
 
         // clusterManager를 이용해 마커 추가
-        clusterManager?.addItem(
-            MyItem(
-                LatLng(toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")),
-                toilets.getString("FNAME"),
-                toilets.getString("ANAME"),
-                BitmapDescriptorFactory.fromBitmap(bitmap)
+        // 내 위치에서 500m내
+        if(getDistance(getMyLocation().latitude, getMyLocation().longitude,
+                toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")) < 500 ){
+
+            Log.d("거리" , getDistance(CITY_HALL.latitude, CITY_HALL.longitude,
+                toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")).toString())
+
+            clusterManager?.addItem(
+                MyItem(
+                    LatLng(toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")),
+                    toilets.getString("FNAME"),
+                    toilets.getString("ANAME"),
+                    BitmapDescriptorFactory.fromBitmap(bitmap)
+                )
             )
-        )
 
-        //
-        itemMap.put(toilets, item)
+            //
+            itemMap.put(toilets, item)
+        }
 
-//            googleMap?.addMarker(
-//                MarkerOptions()
-//                    .position(LatLng(toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")))
-//                    .title(toilets.getString("FNAME"))
-//                    .snippet(toilets.getString("ANAME"))
-//                    .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
-//            )
     }
 }
