@@ -2,6 +2,7 @@ package com.odom.seoulgeup
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -51,6 +52,9 @@ class MainActivity : AppCompatActivity() {
     val DEFAULT_ZOOM_LEVEL = 16f
     val CITY_HALL = LatLng(37.566648, 126.978449)
     var googleMap: GoogleMap? = null
+
+    val myLoc = Location(LocationManager.NETWORK_PROVIDER)
+    val targetLoc = Location(LocationManager.NETWORK_PROVIDER)
 
     lateinit var fusedLocationProviderClient: FusedLocationProviderClient
 
@@ -289,9 +293,24 @@ class MainActivity : AppCompatActivity() {
         return JSONObject(data)
     }
 
+//    fun onn(vararg values: JSONArray?){
+//        Thread(Runnable {
+//            // 0번째의 데이터 사용
+//            val array = values[0]
+//            array?.let {
+//                for (i in 0 until array.length()) {
+//                    // 마커 추가
+//                    addMarkers(array.getJSONObject(i))
+//                }
+//            }
+//        }).start()
+//    }
+
     // 화장실 데이터를 읽어오는 AsyncTask
     @SuppressLint("StaticFieldLeak")
     inner class ToiletReadTask : AsyncTask<Void, JSONArray, String>() {
+
+        val asyncDialog : ProgressDialog = ProgressDialog(this@MainActivity)
 
         // 기존 데이터 초기화
         override fun onPreExecute() {
@@ -301,9 +320,14 @@ class MainActivity : AppCompatActivity() {
             toilets = JSONArray()
             // itemMap 변수 초기화
             itemMap.clear()
+
+            asyncDialog.setProgressStyle(ProgressDialog.BUTTON_POSITIVE)
+            asyncDialog.setMessage("지도 초기화 중...")
+            asyncDialog.show()
         }
 
         override fun doInBackground(vararg params: Void?): String {
+
             // 서울시 데이터는 최대 1000개씩 가져올 수 있으므로
             // 1000개씩 끊는다.
             val step = 1000
@@ -330,7 +354,7 @@ class MainActivity : AppCompatActivity() {
                     jsonObject.getJSONObject("SearchPublicToiletPOIService").getJSONArray("row")
                 // 기존에 읽었던 데이터와 병합
                 toilets.merge(rows)
-                //
+                // UI 업데이트를 위해 progress 발행
                 publishProgress(rows)
 
             } while (lastIndex < totalCnt)
@@ -369,6 +393,9 @@ class MainActivity : AppCompatActivity() {
                 this@MainActivity,
                 android.R.layout.simple_dropdown_item_1line, textList
             )
+
+            // 종료
+            asyncDialog.dismiss()
 
             // 자동완성이 시작되는 글자수
             searchBar.autoCompleteTextView.threshold = 1
@@ -432,8 +459,6 @@ class MainActivity : AppCompatActivity() {
     // 좌표로 거리구하기
     fun getDistance( lat1: Double, lng1:Double, lat2:Double, lng2:Double) : Float{
 
-        val myLoc = Location(LocationManager.NETWORK_PROVIDER)
-        val targetLoc = Location(LocationManager.NETWORK_PROVIDER)
         myLoc.latitude= lat1
         myLoc.longitude = lng1
 
@@ -464,8 +489,8 @@ class MainActivity : AppCompatActivity() {
         if(getDistance(getMyLocation().latitude, getMyLocation().longitude,
                 toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")) < 500 ){
 
-            Log.d("거리" , getDistance(CITY_HALL.latitude, CITY_HALL.longitude,
-                toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")).toString())
+           // Log.d("거리" , getDistance(CITY_HALL.latitude, CITY_HALL.longitude,
+            //    toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")).toString())
 
             clusterManager?.addItem(
                 MyItem(
