@@ -19,6 +19,7 @@ import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
 import android.widget.ArrayAdapter
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
@@ -162,7 +163,6 @@ class MainActivity : AppCompatActivity() {
                         Log.d("TAG", "location get fail")
                     } else {
                         lastKnownLocation = location
-                        Log.d("hhh", "${location.latitude} , ${location.longitude}")
 
                         val myLoc = LatLng(location.latitude, location.longitude)
                         googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(myLoc, DEFAULT_ZOOM_LEVEL))
@@ -172,15 +172,12 @@ class MainActivity : AppCompatActivity() {
         }
         // 안드로이드 10 버전에선 이게 되고
         else{
-            Log.d("zzz", "${lastKnownLocation!!.latitude} , ${lastKnownLocation!!.longitude}")
-
             val myLoc = LatLng(lastKnownLocation!!.latitude, lastKnownLocation!!.longitude)
             googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(myLoc, DEFAULT_ZOOM_LEVEL))
         }
 
-        // 경도, 위도 위치 반환
+        // 경도, 위도 위치 반환 
         if(lastKnownLocation == null){
-            //Toast.makeText(applicationContext, "위치를 가져오지 못 했습니다.", Toast.LENGTH_SHORT).show()
             Log.d("TAG", "위치 확인불가")
             return LatLng(CITY_HALL.latitude, CITY_HALL.longitude)
         }
@@ -215,11 +212,11 @@ class MainActivity : AppCompatActivity() {
             else -> {
                 val builder = AlertDialog.Builder(this@MainActivity)
                 builder.setTitle("위치 사용권한에 동의해주세요.")
-                    .setPositiveButton("동의하기") { dialog, which ->
+                    .setPositiveButton("확인") { dialog, which ->
                         //권한 요청
                         ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
                     }
-                    .setNegativeButton("거절") {_, _ ->
+                    .setNegativeButton("취소") {_, _ ->
                         Toast.makeText(applicationContext, "위치 사용권한에 동의하지 않았습니다", Toast.LENGTH_SHORT).show()
                         googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(CITY_HALL, DEFAULT_ZOOM_LEVEL))
                     }
@@ -293,19 +290,6 @@ class MainActivity : AppCompatActivity() {
         return JSONObject(data)
     }
 
-//    fun onn(vararg values: JSONArray?){
-//        Thread(Runnable {
-//            // 0번째의 데이터 사용
-//            val array = values[0]
-//            array?.let {
-//                for (i in 0 until array.length()) {
-//                    // 마커 추가
-//                    addMarkers(array.getJSONObject(i))
-//                }
-//            }
-//        }).start()
-//    }
-
     // 화장실 데이터를 읽어오는 AsyncTask
     @SuppressLint("StaticFieldLeak")
     inner class ToiletReadTask : AsyncTask<Void, JSONArray, String>() {
@@ -320,6 +304,8 @@ class MainActivity : AppCompatActivity() {
             toilets = JSONArray()
             // itemMap 변수 초기화
             itemMap.clear()
+
+           // asyncDialog.
 
             asyncDialog.setProgressStyle(ProgressDialog.BUTTON_POSITIVE)
             asyncDialog.setMessage("지도 초기화 중...")
@@ -488,9 +474,6 @@ class MainActivity : AppCompatActivity() {
         // 내 위치에서 500m내
         if(getDistance(getMyLocation().latitude, getMyLocation().longitude,
                 toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")) < 500 ){
-
-           // Log.d("거리" , getDistance(CITY_HALL.latitude, CITY_HALL.longitude,
-            //    toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")).toString())
 
             clusterManager?.addItem(
                 MyItem(
