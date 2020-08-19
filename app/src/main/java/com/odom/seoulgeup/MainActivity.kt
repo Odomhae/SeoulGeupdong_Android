@@ -170,13 +170,14 @@ class MainActivity : AppCompatActivity() {
                 }
 
         }
+
         // 안드로이드 10 버전에선 이게 되고
         else{
             val myLoc = LatLng(lastKnownLocation!!.latitude, lastKnownLocation!!.longitude)
             googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(myLoc, DEFAULT_ZOOM_LEVEL))
         }
 
-        // 경도, 위도 위치 반환 
+        // 경도, 위도 위치 반환
         if(lastKnownLocation == null){
             Log.d("TAG", "위치 확인불가")
             return LatLng(CITY_HALL.latitude, CITY_HALL.longitude)
@@ -212,7 +213,7 @@ class MainActivity : AppCompatActivity() {
             else -> {
                 val builder = AlertDialog.Builder(this@MainActivity)
                 builder.setTitle("위치 사용권한에 동의해주세요.")
-                    .setPositiveButton("확인") { dialog, which ->
+                    .setPositiveButton("확인") { _, _ ->
                         //권한 요청
                         ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
                     }
@@ -305,8 +306,6 @@ class MainActivity : AppCompatActivity() {
             // itemMap 변수 초기화
             itemMap.clear()
 
-           // asyncDialog.
-
             asyncDialog.setProgressStyle(ProgressDialog.BUTTON_POSITIVE)
             asyncDialog.setMessage("지도 초기화 중...")
             asyncDialog.show()
@@ -380,7 +379,7 @@ class MainActivity : AppCompatActivity() {
                 android.R.layout.simple_dropdown_item_1line, textList
             )
 
-            // 종료
+            // ProgressDialog 종료
             asyncDialog.dismiss()
 
             // 자동완성이 시작되는 글자수
@@ -472,8 +471,8 @@ class MainActivity : AppCompatActivity() {
 
         // clusterManager를 이용해 마커 추가
         // 내 위치에서 500m내
-        if(getDistance(getMyLocation().latitude, getMyLocation().longitude,
-                toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")) < 500 ){
+     //   if(getDistance(getMyLocation().latitude, getMyLocation().longitude,
+     //           toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")) < 500 ){
 
             clusterManager?.addItem(
                 MyItem(
@@ -486,7 +485,7 @@ class MainActivity : AppCompatActivity() {
 
             //
             itemMap.put(toilets, item)
-        }
+      //  }
 
     }
 }
