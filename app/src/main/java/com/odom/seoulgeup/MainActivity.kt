@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
         )
 
     val REQUEST_PERMISSION_CODE = 1
-    val DEFAULT_ZOOM_LEVEL = 16f
+    val DEFAULT_ZOOM_LEVEL = 18f
     val CITY_HALL = LatLng(37.566648, 126.978449)
     var googleMap: GoogleMap? = null
 
@@ -441,18 +441,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // 좌표로 거리구하기
-    fun getDistance( lat1: Double, lng1:Double, lat2:Double, lng2:Double) : Float{
-
-        myLoc.latitude= lat1
-        myLoc.longitude = lng1
-
-        targetLoc.latitude= lat2
-        targetLoc.longitude = lng2
-
-        return myLoc.distanceTo(targetLoc)
-    }
-
     // 앱이 비활성화될때마다 백그라운드 작업취소
     override fun onStop() {
         super.onStop()
@@ -470,22 +458,16 @@ class MainActivity : AppCompatActivity() {
         )
 
         // clusterManager를 이용해 마커 추가
-        // 내 위치에서 500m내
-     //   if(getDistance(getMyLocation().latitude, getMyLocation().longitude,
-     //           toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")) < 500 ){
-
-            clusterManager?.addItem(
-                MyItem(
-                    LatLng(toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")),
-                    toilets.getString("FNAME"),
-                    toilets.getString("ANAME"),
-                    BitmapDescriptorFactory.fromBitmap(bitmap)
-                )
+        clusterManager?.addItem(
+            MyItem(
+                LatLng(toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")),
+                toilets.getString("FNAME"),
+                toilets.getString("ANAME"),
+                BitmapDescriptorFactory.fromBitmap(bitmap)
             )
+        )
 
-            //
-            itemMap.put(toilets, item)
-      //  }
-
+        //
+        itemMap.put(toilets, item)
     }
 }
