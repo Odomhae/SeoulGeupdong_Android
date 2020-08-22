@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.VectorDrawable
 import android.location.Location
 import android.location.LocationManager
 import android.net.ConnectivityManager
@@ -268,7 +269,7 @@ class MainActivity : AppCompatActivity() {
 
     // 화장실 이미지
     val bitmap by lazy {
-        val drawable = resources.getDrawable(R.drawable.restroom_sign) as BitmapDrawable
+        val drawable = resources.getDrawable(R.drawable.toilet_sign) as BitmapDrawable
         Bitmap.createScaledBitmap(drawable.bitmap, 64, 64, false)
     }
 
