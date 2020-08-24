@@ -8,4 +8,5 @@
     <string name="check_permission">위치 사용권한에 동의해주세요.</string>
     <string name="alert_location_permission">위치 사용권한에 동의하지 않았습니다.</string>
     <string name="map_initialization">지도 초기화 중...</string>
+    <string name="enter_here">여기에 검색하세요.</string>
 </resources>

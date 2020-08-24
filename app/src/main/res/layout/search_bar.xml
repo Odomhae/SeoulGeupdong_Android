@@ -33,7 +33,7 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintHeight_max="100dp"
-            android:hint="여기에 검색하세요"
+            android:hint="@string/enter_here"
 
             android:background="@android:color/transparent"/>
 
