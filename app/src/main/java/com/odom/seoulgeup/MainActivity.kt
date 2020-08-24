@@ -69,8 +69,8 @@ class MainActivity : AppCompatActivity() {
         // 알림 후 종료
         if(!checkInternetConnection()){
             val builder = AlertDialog.Builder(this@MainActivity)
-            builder.setTitle("인터넷 연결을 확인해주세요 ")
-                .setPositiveButton("확인") { _, _ ->
+            builder.setTitle(R.string.check_internet)
+                .setPositiveButton(R.string.check) { _, _ ->
                     finish()
                     exitProcess(0)
                 }
@@ -197,13 +197,13 @@ class MainActivity : AppCompatActivity() {
                 // 권한은 있는데 GPS 꺼져있으면 켜는 화면으로 이동
                 if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
                     val builder = AlertDialog.Builder(this@MainActivity)
-                    builder.setTitle("GPS가 꺼져있습니다.")
-                        .setPositiveButton("확인") { _, _ ->
+                    builder.setTitle(R.string.check_gps)
+                        .setPositiveButton(R.string.check) { _, _ ->
                             val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
                             intent.addCategory(Intent.CATEGORY_DEFAULT)
                             startActivity(intent)
                         }
-                        .setNegativeButton("취소") {_, _ ->
+                        .setNegativeButton(R.string.cancel) {_, _ ->
                         }
 
                     val alertDialog = builder.create()
@@ -213,13 +213,13 @@ class MainActivity : AppCompatActivity() {
 
             else -> {
                 val builder = AlertDialog.Builder(this@MainActivity)
-                builder.setTitle("위치 사용권한에 동의해주세요.")
-                    .setPositiveButton("확인") { _, _ ->
+                builder.setTitle(R.string.check_permission)
+                    .setPositiveButton(R.string.check) { _, _ ->
                         //권한 요청
                         ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
                     }
-                    .setNegativeButton("취소") {_, _ ->
-                        Toast.makeText(applicationContext, "위치 사용권한에 동의하지 않았습니다", Toast.LENGTH_SHORT).show()
+                    .setNegativeButton(R.string.cancel) {_, _ ->
+                        Toast.makeText(applicationContext, R.string.alert_location_permission, Toast.LENGTH_SHORT).show()
                         googleMap?.moveCamera(CameraUpdateFactory.newLatLngZoom(CITY_HALL, DEFAULT_ZOOM_LEVEL))
                     }
 
@@ -306,9 +306,8 @@ class MainActivity : AppCompatActivity() {
             toilets = JSONArray()
             // itemMap 변수 초기화
             itemMap.clear()
-
             asyncDialog.setProgressStyle(ProgressDialog.BUTTON_POSITIVE)
-            asyncDialog.setMessage("지도 초기화 중...")
+            asyncDialog.setMessage("Loading...")
             asyncDialog.show()
         }
 
