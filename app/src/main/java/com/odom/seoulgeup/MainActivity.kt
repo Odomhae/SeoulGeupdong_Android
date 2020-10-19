@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
         mapView.onCreate(savedInstanceState)
-        MapsInitializer.initialize(applicationContext)
+       // MapsInitializer.initialize(applicationContext)
 
         //권한 요청
         ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
