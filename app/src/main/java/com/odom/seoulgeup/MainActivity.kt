@@ -14,15 +14,21 @@ import android.location.LocationManager
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
 import android.os.AsyncTask
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
+import androidx.core.view.OnApplyWindowInsetsListener
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.databinding.DataBindingUtil
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.LoadAdError
@@ -61,6 +67,27 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val rootView = this.findViewById<View>(android.R.id.content)
+        if (rootView != null) {
+
+            ViewCompat.setOnApplyWindowInsetsListener(rootView, OnApplyWindowInsetsListener { v, insets ->
+                val systemBarSpacing = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+                v.setPadding(
+                    systemBarSpacing.left,
+                    systemBarSpacing.top,
+                    systemBarSpacing.right,
+                    systemBarSpacing.bottom
+                )
+
+                insets
+            })
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            val compat = WindowInsetsControllerCompat(this.window, this.window.decorView)
+            compat.isAppearanceLightStatusBars = true
+        }
 
         fusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this)
 

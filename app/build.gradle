@@ -15,8 +15,8 @@ android {
         applicationId "com.odom.seoulgeup"
         minSdkVersion 23
         targetSdkVersion 35
-        versionCode 8
-        versionName "1.7"
+        versionCode 10
+        versionName "1.9"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
