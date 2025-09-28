@@ -2,17 +2,21 @@ apply plugin: 'com.android.application'
 
 apply plugin: 'kotlin-android'
 
-apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-parcelize'
+
+apply plugin: 'kotlin-kapt'
+
 
 android {
-    compileSdkVersion 33
+    compileSdk 35
     buildToolsVersion "29.0.3"
+    namespace "com.odom.seoulgeup"
     defaultConfig {
         applicationId "com.odom.seoulgeup"
-        minSdkVersion 17
-        targetSdkVersion 33
-        versionCode 6
-        versionName "1.5"
+        minSdkVersion 23
+        targetSdkVersion 35
+        versionCode 8
+        versionName "1.7"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -27,6 +31,15 @@ android {
         //    resValue "string", "google_maps_key", "{AIzaSyC5aBMNdu0c4TfDmAKuthjpvaTPjReH-xA}"
         }
     }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    dataBinding {
+        enabled = true
+    }
 }
 
 dependencies {
@@ -38,8 +51,9 @@ dependencies {
     implementation 'com.google.android.gms:play-services-location:17.1.0'
     implementation 'com.google.maps.android:android-maps-utils:0.6.2'
     implementation 'androidx.cardview:cardview:1.0.0'
-    implementation 'com.google.android.material:material:1.0.0-rc01'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
+    implementation 'com.google.android.gms:play-services-ads-api:24.5.0'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
