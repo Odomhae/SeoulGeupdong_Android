@@ -318,7 +318,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // 서울 열린 데이터 광장 발급 키
-    val API_KEY = "4a4f64704a6a69683531797672504b"
+    val API_KEY = "6e795662766a6968353444666d6453" // 4a4f64704a6a69683531797672504b
 
     var task: ToiletReadTask ?= null
     // 화장실 정보 저장할 배열
@@ -342,8 +342,8 @@ class MainActivity : AppCompatActivity() {
     fun readData(startIndex:Int, lastIndex:Int) : JSONObject {
         val url =
             URL(
-                "http://openAPI.seoul.go.kr:8088" + "/" +
-                        "${API_KEY}/json/SearchPublicToiletPOIService/${startIndex}/${lastIndex}"
+                "http://openapi.seoul.go.kr:8088" + "/" +
+                        "${API_KEY}/json/mgisToiletPoi/${startIndex}/${lastIndex}"
             )
         val connection = url.openConnection()
 
@@ -391,11 +391,11 @@ class MainActivity : AppCompatActivity() {
 
                 val jsonObject = readData(startIndex, lastIndex)
 
-                totalCnt = jsonObject.getJSONObject("SearchPublicToiletPOIService")
+                totalCnt = jsonObject.getJSONObject("mgisToiletPoi")
                     .getInt("list_total_count")
                 //
                 val rows =
-                    jsonObject.getJSONObject("SearchPublicToiletPOIService").getJSONArray("row")
+                    jsonObject.getJSONObject("mgisToiletPoi").getJSONArray("row")
                 // 기존에 읽었던 데이터와 병합
                 toilets.merge(rows)
                 // UI 업데이트를 위해 progress 발행
@@ -429,7 +429,7 @@ class MainActivity : AppCompatActivity() {
             // 모든 화장실의 이름을 리스트에 추가
             for(i in 0 until toilets.length()){
                 val toilet = toilets.getJSONObject(i)
-                textList.add(toilet.getString("FNAME"))
+                textList.add(toilet.getString("CONTS_NAME"))
             }
 
             // 자동완성 텍스트뷰의 어댑터 추가
@@ -479,7 +479,7 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
 
             // 검색 키워드에 해당하는 jsonobject 검색
-            toilets.findByChildProperty("FNAME", word)?.let{
+            toilets.findByChildProperty("CONTS_NAME", word)?.let{
                 val myItem = itemMap[it]
 
                 // clusterRenderer에서 myItem을 기반으로 마커 검색
@@ -489,7 +489,7 @@ class MainActivity : AppCompatActivity() {
                 // 마커 위치로 카메라 이동
                 googleMap?.moveCamera(
                     CameraUpdateFactory.newLatLngZoom(
-                        LatLng(it.getDouble("Y_WGS84"), it.getDouble("X_WGS84")), DEFAULT_ZOOM_LEVEL
+                        LatLng(it.getDouble("COORD_Y"), it.getDouble("COORD_X")), DEFAULT_ZOOM_LEVEL
                     )
                 )
                 clusterManager?.cluster()
@@ -510,18 +510,18 @@ class MainActivity : AppCompatActivity() {
     // 마커 추가
     fun addMarkers(toilets : JSONObject){
         val item = MyItem(
-            LatLng(toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")),
-            toilets.getString("FNAME"),
-            toilets.getString("ANAME"),
+            LatLng(toilets.getDouble("COORD_Y"), toilets.getDouble("COORD_X")),
+            toilets.getString("CONTS_NAME"),
+            toilets.getString("CONTS_NAME"),
             BitmapDescriptorFactory.fromBitmap(bitmap)
         )
 
         // clusterManager를 이용해 마커 추가
         clusterManager?.addItem(
             MyItem(
-                LatLng(toilets.getDouble("Y_WGS84"), toilets.getDouble("X_WGS84")),
-                toilets.getString("FNAME"),
-                toilets.getString("ANAME"),
+                LatLng(toilets.getDouble("COORD_Y"), toilets.getDouble("COORD_X")),
+                toilets.getString("CONTS_NAME"),
+                toilets.getString("CONTS_NAME"),
                 BitmapDescriptorFactory.fromBitmap(bitmap)
             )
         )
