@@ -2,18 +2,15 @@ package com.odom.seoulgeup
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.ProgressDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.VectorDrawable
 import android.location.Location
 import android.location.LocationManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.AsyncTask
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -31,6 +28,12 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
@@ -289,24 +292,16 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         binding.mapView.onResume()
-        //  앱 AsyncTask 중지되었으면
-        if(ToiletReadTask().status == AsyncTask.Status.FINISHED)
-            ToiletReadTask().execute()
     }
     override fun onPause() {
         binding.mapView.onPause()
         super.onPause()
-        // 앱 AsyncTask도 pause
-        if(ToiletReadTask().status == AsyncTask.Status.RUNNING)
-            ToiletReadTask().cancel(true)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         binding.mapView.onDestroy()
-        // 앱 종료시 AsyncTask도 종료
-        if(ToiletReadTask().status == AsyncTask.Status.RUNNING)
-            ToiletReadTask().cancel(true)
+        fetchJob?.cancel()
     }
 
     override fun onLowMemory() {
@@ -317,7 +312,7 @@ class MainActivity : AppCompatActivity() {
     // 서울 열린 데이터 광장 발급 키
     val API_KEY = "6e795662766a6968353444666d6453" // 4a4f64704a6a69683531797672504b
 
-    var task: ToiletReadTask ?= null
+    var fetchJob: Job? = null
     // 화장실 정보 저장할 배열
     var toilets = JSONArray()
     // JSONobject를 키로 MyItem 객체를 저장할 맵
@@ -348,101 +343,63 @@ class MainActivity : AppCompatActivity() {
         return JSONObject(data)
     }
 
-    // 화장실 데이터를 읽어오는 AsyncTask
-    @SuppressLint("StaticFieldLeak")
-    inner class ToiletReadTask : AsyncTask<Void, JSONArray, String>() {
-
-        val asyncDialog : ProgressDialog = ProgressDialog(this@MainActivity)
-
-        // 기존 데이터 초기화
-        override fun onPreExecute() {
-            // 구글맵 마커 초기화
+    private fun fetchToilets() {
+        fetchJob?.cancel()
+        fetchJob = lifecycleScope.launch {
+            binding.progressIndicator.visibility = View.VISIBLE
             googleMap?.clear()
-            // 화장실 정보 초기화
             toilets = JSONArray()
-            // itemMap 변수 초기화
             itemMap.clear()
-            asyncDialog.setProgressStyle(ProgressDialog.BUTTON_POSITIVE)
-            asyncDialog.setMessage("Loading...")
-            asyncDialog.show()
-        }
 
-        override fun doInBackground(vararg params: Void?): String {
-
-            // 서울시 데이터는 최대 1000개씩 가져올 수 있으므로
-            // 1000개씩 끊는다.
             val step = 1000
             var startIndex = 1
             var lastIndex = step
             var totalCnt = 0
 
-            do {
-                // 백그라운드 작업이 취소되었을 때는 루프 종료
-                if (isCancelled)
-                    break
+            try {
+                do {
+                    if (!isActive) break
 
-                if (totalCnt != 0) {
-                    startIndex += step // 1000
-                    lastIndex += step // 1000
-                }
+                    if (totalCnt != 0) {
+                        startIndex += step
+                        lastIndex += step
+                    }
 
-                val jsonObject = readData(startIndex, lastIndex)
+                    val jsonObject = withContext(Dispatchers.IO) {
+                        readData(startIndex, lastIndex)
+                    }
 
-                totalCnt = jsonObject.getJSONObject("mgisToiletPoi")
-                    .getInt("list_total_count")
-                //
-                val rows =
-                    jsonObject.getJSONObject("mgisToiletPoi").getJSONArray("row")
-                // 기존에 읽었던 데이터와 병합
-                toilets.merge(rows)
-                // UI 업데이트를 위해 progress 발행
-                publishProgress(rows)
+                    val mgisObj = jsonObject.getJSONObject("mgisToiletPoi")
+                    totalCnt = mgisObj.getInt("list_total_count")
+                    val rows = mgisObj.getJSONArray("row")
+                    toilets.merge(rows)
 
-            } while (lastIndex < totalCnt)
+                    for (i in 0 until rows.length()) {
+                        addMarkers(rows.getJSONObject(i))
+                    }
+                    clusterManager?.cluster()
 
-            return "complete"
-        }
+                } while (lastIndex < totalCnt)
 
-        // 데이터를 읽어올때마다 실행
-        override fun onProgressUpdate(vararg values: JSONArray?) {
-            // 0번째의 데이터 사용
-            val array = values[0]
-            array?.let {
-                for (i in 0 until array.length()) {
-                    // 마커 추가
-                    addMarkers(array.getJSONObject(i))
-                }
+                setupSearchAdapter()
+            } finally {
+                binding.progressIndicator.visibility = View.GONE
             }
-
-            // clusterManager의 클러스터링 실행
-            clusterManager?.cluster()
         }
+    }
 
-        // 백그라운드 작업이 끝난 후 실행
-        override fun onPostExecute(result: String?) {
-            // 자동완성 텍스트뷰에서 사용할 텍스트 리스트
-            val textList = mutableListOf<String>()
-
-            // 모든 화장실의 이름을 리스트에 추가
-            for(i in 0 until toilets.length()){
-                val toilet = toilets.getJSONObject(i)
-                textList.add(toilet.getString("CONTS_NAME"))
-            }
-
-            // 자동완성 텍스트뷰의 어댑터 추가
-            val adapter = ArrayAdapter<String>(
-                this@MainActivity,
-                android.R.layout.simple_dropdown_item_1line, textList
-            )
-
-            // ProgressDialog 종료
-            asyncDialog.dismiss()
-
-            // 자동완성이 시작되는 글자수
-            binding.searchBar.autoCompleteTextView.threshold = 1
-            // 자동완성 텍스트뷰의 어댑터 설정
-            binding.searchBar.autoCompleteTextView.setAdapter(adapter)
+    private fun setupSearchAdapter() {
+        val textList = mutableListOf<String>()
+        for (i in 0 until toilets.length()) {
+            textList.add(toilets.getJSONObject(i).getString("CONTS_NAME"))
         }
+        val adapter = ArrayAdapter<String>(
+            this,
+            android.R.layout.simple_dropdown_item_1line,
+            textList
+        )
+        binding.searchBar.autoCompleteTextView.threshold = 1
+        binding.searchBar.autoCompleteTextView.setAdapter(adapter)
     }
 
     // JSONArray에서 원소의 속성으로 검색
@@ -458,41 +415,25 @@ class MainActivity : AppCompatActivity() {
     // 앱이 활성화될때마다 데이터를 읽어옴
     override fun onStart() {
         super.onStart()
-        task?.cancel(true)
-        task = ToiletReadTask()
-
-        // 인터넷 연결이 있을시에만 AsyncTask 실행★
-        if(checkInternetConnection()){
-            Log.d("TAG", "task EXECUTE")
-            task?.execute()
+        if (checkInternetConnection()) {
+            fetchToilets()
         }
-
-
-        // searchbar 검색 리스너 설정
         binding.searchBar.imageView.setOnClickListener {
             val word = binding.searchBar.autoCompleteTextView.text.toString()
-            // 값이 없으면 그대로 리턴
-            if(TextUtils.isEmpty(word))
-                return@setOnClickListener
+            if (TextUtils.isEmpty(word)) return@setOnClickListener
 
-            // 검색 키워드에 해당하는 jsonobject 검색
-            toilets.findByChildProperty("CONTS_NAME", word)?.let{
+            toilets.findByChildProperty("CONTS_NAME", word)?.let {
                 val myItem = itemMap[it]
-
-                // clusterRenderer에서 myItem을 기반으로 마커 검색
                 val marker = clusterRenderer?.getMarker(myItem)
                 marker?.showInfoWindow()
-
-                // 마커 위치로 카메라 이동
                 googleMap?.moveCamera(
                     CameraUpdateFactory.newLatLngZoom(
-                        LatLng(it.getDouble("COORD_Y"), it.getDouble("COORD_X")), DEFAULT_ZOOM_LEVEL
+                        LatLng(it.getDouble("COORD_Y"), it.getDouble("COORD_X")),
+                        DEFAULT_ZOOM_LEVEL
                     )
                 )
                 clusterManager?.cluster()
             }
-
-            // 검색 텍스트 초기화
             binding.searchBar.autoCompleteTextView.setText("")
         }
     }
@@ -500,8 +441,7 @@ class MainActivity : AppCompatActivity() {
     // 앱이 비활성화될때마다 백그라운드 작업취소
     override fun onStop() {
         super.onStop()
-        task?.cancel(true)
-        task = null
+        fetchJob?.cancel()
     }
 
     // 마커 추가
