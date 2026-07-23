@@ -12,7 +12,7 @@ import android.graphics.drawable.VectorDrawable
 import android.location.Location
 import android.location.LocationManager
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.net.NetworkCapabilities
 import android.os.AsyncTask
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
@@ -25,6 +25,7 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.OnApplyWindowInsetsListener
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -120,14 +121,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     // 인터넷 연결 확인
-    fun checkInternetConnection() : Boolean {
+    fun checkInternetConnection(): Boolean {
         val cm = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
-        val activeNetwork: NetworkInfo? = cm.activeNetworkInfo
-
-        if (activeNetwork != null)
-            return true
-
-        return false
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
     private fun initializeAds() {
@@ -328,7 +325,7 @@ class MainActivity : AppCompatActivity() {
 
     // 화장실 이미지
     val bitmap by lazy {
-        val drawable = resources.getDrawable(R.drawable.toilet_sign) as BitmapDrawable
+        val drawable = ContextCompat.getDrawable(this, R.drawable.toilet_sign) as BitmapDrawable
         Bitmap.createScaledBitmap(drawable.bitmap, 64, 64, false)
     }
 
