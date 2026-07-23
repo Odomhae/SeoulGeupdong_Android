@@ -45,7 +45,9 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.maps.android.clustering.ClusterManager
+import android.widget.TextView
 import com.odom.seoulgeup.databinding.ActivityMainBinding
 import org.json.JSONArray
 import org.json.JSONObject
@@ -188,6 +190,11 @@ class MainActivity : AppCompatActivity() {
             clusterManager = ClusterManager(this, it)
             clusterRenderer = ClusterRenderer(this, it, clusterManager)
 
+            clusterManager?.setOnClusterItemClickListener { item ->
+                reverseItemMap[item]?.let { showToiletDetail(it) }
+                true
+            }
+
             //
             it.setOnCameraIdleListener(clusterManager)
             it.setOnMarkerClickListener(clusterManager)
@@ -317,6 +324,7 @@ class MainActivity : AppCompatActivity() {
     var toilets = JSONArray()
     // JSONobject를 키로 MyItem 객체를 저장할 맵
     val itemMap = mutableMapOf<JSONObject, MyItem>()
+    val reverseItemMap = mutableMapOf<MyItem, JSONObject>()
 
     // 화장실 이미지
     val bitmap by lazy {
@@ -350,6 +358,7 @@ class MainActivity : AppCompatActivity() {
             googleMap?.clear()
             toilets = JSONArray()
             itemMap.clear()
+            reverseItemMap.clear()
 
             val step = 1000
             var startIndex = 1
@@ -445,25 +454,56 @@ class MainActivity : AppCompatActivity() {
     }
 
     // 마커 추가
-    fun addMarkers(toilets : JSONObject){
+    fun addMarkers(toilet: JSONObject) {
         val item = MyItem(
-            LatLng(toilets.getDouble("COORD_Y"), toilets.getDouble("COORD_X")),
-            toilets.getString("CONTS_NAME"),
-            toilets.getString("CONTS_NAME"),
+            LatLng(toilet.getDouble("COORD_Y"), toilet.getDouble("COORD_X")),
+            toilet.getString("CONTS_NAME"),
+            toilet.getString("CONTS_NAME"),
             BitmapDescriptorFactory.fromBitmap(bitmap)
         )
+        clusterManager?.addItem(item)
+        itemMap[toilet] = item
+        reverseItemMap[item] = toilet
+    }
 
-        // clusterManager를 이용해 마커 추가
-        clusterManager?.addItem(
-            MyItem(
-                LatLng(toilets.getDouble("COORD_Y"), toilets.getDouble("COORD_X")),
-                toilets.getString("CONTS_NAME"),
-                toilets.getString("CONTS_NAME"),
-                BitmapDescriptorFactory.fromBitmap(bitmap)
-            )
-        )
+    fun showToiletDetail(json: JSONObject) {
+        val dialog = BottomSheetDialog(this)
+        val sheetView = layoutInflater.inflate(R.layout.bottom_sheet_toilet_detail, null)
 
-        //
-        itemMap.put(toilets, item)
+        sheetView.findViewById<TextView>(R.id.tvName).text = json.optString("CONTS_NAME")
+
+        val address = json.optString("RDNMADR").ifEmpty { json.optString("LNMADR") }
+        if (address.isNotEmpty()) {
+            sheetView.findViewById<TextView>(R.id.tvAddress).text = address
+        } else {
+            sheetView.findViewById<View>(R.id.rowAddress).visibility = View.GONE
+        }
+
+        val openTime = json.optString("OPNTIME")
+        val closeTime = json.optString("CLSTIME")
+        if (openTime.isNotEmpty() || closeTime.isNotEmpty()) {
+            sheetView.findViewById<TextView>(R.id.tvHours).text = "$openTime ~ $closeTime"
+        } else {
+            sheetView.findViewById<View>(R.id.rowHours).visibility = View.GONE
+        }
+
+        val disabledYn = json.optString("DSBLED_TOILET_YN")
+        if (disabledYn.isNotEmpty()) {
+            sheetView.findViewById<TextView>(R.id.tvDisabled).text =
+                if (disabledYn == "Y") "있음" else "없음"
+        } else {
+            sheetView.findViewById<View>(R.id.rowDisabled).visibility = View.GONE
+        }
+
+        val babyYn = json.optString("BABY_POTY_YN")
+        if (babyYn.isNotEmpty()) {
+            sheetView.findViewById<TextView>(R.id.tvBaby).text =
+                if (babyYn == "Y") "있음" else "없음"
+        } else {
+            sheetView.findViewById<View>(R.id.rowBaby).visibility = View.GONE
+        }
+
+        dialog.setContentView(sheetView)
+        dialog.show()
     }
 }
