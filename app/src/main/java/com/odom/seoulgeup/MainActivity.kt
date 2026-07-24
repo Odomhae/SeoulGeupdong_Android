@@ -192,6 +192,7 @@ class MainActivity : AppCompatActivity() {
 
             clusterManager?.setOnClusterItemClickListener { item ->
                 reverseItemMap[item]?.let { showToiletDetail(it) }
+                clusterRenderer?.getMarker(item)?.showInfoWindow()
                 true
             }
 
@@ -472,38 +473,36 @@ class MainActivity : AppCompatActivity() {
 
         sheetView.findViewById<TextView>(R.id.tvName).text = json.optString("CONTS_NAME")
 
-        val address = json.optString("RDNMADR").ifEmpty { json.optString("LNMADR") }
+        val address = json.optString("ADDR_NEW").ifEmpty { json.optString("ADDR_OLD") } // 도로명 주소, 지번주소
         if (address.isNotEmpty()) {
             sheetView.findViewById<TextView>(R.id.tvAddress).text = address
         } else {
             sheetView.findViewById<View>(R.id.rowAddress).visibility = View.GONE
         }
 
-        val openTime = json.optString("OPNTIME")
-        val closeTime = json.optString("CLSTIME")
-        if (openTime.isNotEmpty() || closeTime.isNotEmpty()) {
-            sheetView.findViewById<TextView>(R.id.tvHours).text = "$openTime ~ $closeTime"
+        val openTime = json.optString("VALUE_02") // 개방시간
+        if (openTime.isNotEmpty()) {
+            sheetView.findViewById<TextView>(R.id.tvHours).text = "$openTime"
         } else {
             sheetView.findViewById<View>(R.id.rowHours).visibility = View.GONE
         }
 
-        val disabledYn = json.optString("DSBLED_TOILET_YN")
+        val disabledYn = json.optString("VALUE_05") // 장애인화장실 현황
         if (disabledYn.isNotEmpty()) {
-            sheetView.findViewById<TextView>(R.id.tvDisabled).text =
-                if (disabledYn == "Y") "있음" else "없음"
+            sheetView.findViewById<TextView>(R.id.tvDisabled).text = disabledYn
         } else {
             sheetView.findViewById<View>(R.id.rowDisabled).visibility = View.GONE
         }
 
-        val babyYn = json.optString("BABY_POTY_YN")
-        if (babyYn.isNotEmpty()) {
-            sheetView.findViewById<TextView>(R.id.tvBaby).text =
-                if (babyYn == "Y") "있음" else "없음"
+        val telNo = json.optString("TEL_NO") // 전화번호
+        if (telNo.isNotEmpty()) {
+            sheetView.findViewById<TextView>(R.id.tvBaby).text = telNo
         } else {
             sheetView.findViewById<View>(R.id.rowBaby).visibility = View.GONE
         }
 
         dialog.setContentView(sheetView)
         dialog.show()
+        dialog.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND)
     }
 }
